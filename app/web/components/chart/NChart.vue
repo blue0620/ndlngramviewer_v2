@@ -1,7 +1,7 @@
 <template>
   <div class="nchart">
     <div class="contents">
-      <b-button @click="clickButton">出版年代の分布を見る</b-button>
+      <button class="button is-info" @click="clickButton">出版年代の分布を見る</button>
       <LineChart v-if="dataLoad" :chart-data="datacollection" />
     </div>
   </div>
