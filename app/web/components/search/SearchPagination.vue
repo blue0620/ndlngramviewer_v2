@@ -1,11 +1,11 @@
 <template>
   <div class="search-paginaition">
     <nav class="pagination is-small" role="navigation" aria-label="pagination">
-      <a class="pagination-previous is-small" :disabled="page <= 1" @click="goto(page - 1)">
-        <b-icon icon="chevron-left" />
+      <a class="pagination-previous is-small" :class="{ 'is-disabled': page <= 1 }" @click="goto(page - 1)">
+        ‹
       </a>
-      <a class="pagination-next is-small" :disabled="page >= maxPage" @click="goto(page + 1)">
-        <b-icon icon="chevron-right" />
+      <a class="pagination-next is-small" :class="{ 'is-disabled': page >= maxPage }" @click="goto(page + 1)">
+        ›
       </a>
       <ul class="pagination-list">
         <template v-if="showLeadingShortcut">
