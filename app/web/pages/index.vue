@@ -82,6 +82,7 @@
           :year-range="yearRange"
           :is-rate="isRate"
           :input="keyword"
+          :materialtype="materialtype"
           @closemodal="closeModal"
         />
       </div>
