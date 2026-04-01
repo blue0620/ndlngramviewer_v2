@@ -1,47 +1,45 @@
-import * as Axios from "axios";
-import * as Config from "config";
-import { Ngramyear } from "domain/ngramyear";
-const BASE_URL = Config.BASE_PATH + "api/";
-const DATASET_URL="https://lab.ndl.go.jp/dataset/ngramviewer/";
+import axios from 'axios'
+import type { Ngramyear } from '~/src/domain/ngramyear'
 
-/*export function search(s: string): Axios.AxiosPromise<Ngramyear[]> {
-  let fd = new FormData();
-  fd.append("bib", s);
-  return Axios.default.post<Ngramyear[]>(BASE_URL + "search", fd);
-}*/
+const API_BASE_URL = '/api/'
+const DATASET_URL = 'https://lab.ndl.go.jp/dataset/ngramviewer/'
+
 export interface SearchResult<T> {
-  list: T[];
-  hit: number;
-  from: number;
-};
+  list: T[]
+  hit: number
+  from: number
+}
 
-export function search(keywords: string,size:number=null,from:number=null,materialtype:string=null,groupstr: string=null): Axios.AxiosPromise<SearchResult<Ngramyear>> {
-  var resstring=BASE_URL + "search?keyword=" +keywords;
-  if(size!==null){
-    resstring+="&size="+size;
-  }
-  if(from!==null){
-    resstring+="&from="+from;
-  }
-  if(groupstr!==null){
-    resstring+="&groupstr="+groupstr;
-  }
-  if(materialtype!==null){
-    resstring+="&materialtype="+materialtype;
-  }
-  return Axios.default.get<SearchResult<Ngramyear>>(encodeURI(resstring));
+export function search(
+  keywords: string,
+  size: number | null = null,
+  from: number | null = null,
+  materialtype: string | null = null,
+  groupstr: string | null = null,
+) {
+  const params = new URLSearchParams({ keyword: keywords })
+
+  if (size !== null) params.set('size', String(size))
+  if (from !== null) params.set('from', String(from))
+  if (groupstr !== null) params.set('groupstr', groupstr)
+  if (materialtype !== null) params.set('materialtype', materialtype)
+
+  return axios.get<SearchResult<Ngramyear>>(`${API_BASE_URL}search?${params.toString()}`)
 }
-export function getyearfreq(materialtype:string){
-  var resstring=DATASET_URL + "yearfrequency_" +materialtype+".json";
-  return Axios.default.get(encodeURI(resstring));
+
+export function getyearfreq(materialtype: string) {
+  return axios.get<Record<string, number>>(`${DATASET_URL}yearfrequency_${materialtype}.json`)
 }
-export function downloadurl(keywords: string,materialtype:string=null,groupstr: string=null): string {
-  var resstring=BASE_URL + "download?keyword=" +keywords+"&size=10000";
-  if(materialtype!==null){
-    resstring+="&materialtype="+materialtype;
-  }
-  if(groupstr!==null){
-    resstring+="&groupstr="+groupstr;
-  }
-  return encodeURI(resstring);
+
+export function downloadurl(
+  keywords: string,
+  materialtype: string | null = null,
+  groupstr: string | null = null,
+): string {
+  const params = new URLSearchParams({ keyword: keywords, size: '10000' })
+
+  if (materialtype !== null) params.set('materialtype', materialtype)
+  if (groupstr !== null) params.set('groupstr', groupstr)
+
+  return `${API_BASE_URL}download?${params.toString()}`
 }

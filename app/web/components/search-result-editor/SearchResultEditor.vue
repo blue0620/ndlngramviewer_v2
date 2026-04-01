@@ -93,6 +93,7 @@ interface Props {
   yearRange: [number, number]
   isRate: boolean
   input: string
+  materialtype: string
 }
 
 const props = defineProps<Props>()
@@ -201,11 +202,13 @@ const buildGroupStr = () => totalingKeywordList.value
 
 const totalingResult = () => {
   const groupstr = buildGroupStr()
-  window.open(`${window.location.href}&groupstr=${groupstr}`)
+  const url = new URL(window.location.href)
+  url.searchParams.set('groupstr', groupstr)
+  window.open(url.toString())
 }
 
 const totalingDownload = () => {
   const groupstr = buildGroupStr()
-  window.open(downloadurl(encodeURIComponent(props.input), groupstr))
+  window.open(downloadurl(encodeURIComponent(props.input), props.materialtype, groupstr))
 }
 </script>

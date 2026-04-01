@@ -1,48 +1,5 @@
 @import "_palette.scss";
-@import "~bulma/sass/utilities/_all";
-
-// Setup $colors to use as bulma classes
-$colors: (
-  "white": (
-    $white,
-    $black
-  ),
-  "black": (
-    $black,
-    $white
-  ),
-  "light": (
-    $light,
-    $light-invert
-  ),
-  "dark": (
-    $dark,
-    $dark-invert
-  ),
-  "primary": (
-    $primary,
-    $primary-invert
-  ),
-  "info": (
-    $info,
-    $info-invert
-  ),
-  "success": (
-    $success,
-    $success-invert
-  ),
-  "warning": (
-    $warning,
-    $warning-invert
-  ),
-  "danger": (
-    $danger,
-    $danger-invert
-  )
-);
-
-@import "~bulma";
-
+@import "bulma/css/bulma.css";
 @import "overrides";
 
 body {
@@ -54,17 +11,17 @@ body {
   overflow-y: hidden !important;
 }
 
-.is-width-2{
-  width:2rem;
+.is-width-2 {
+  width: 2rem;
 }
-.is-width-3{
-  width:3rem;
+.is-width-3 {
+  width: 3rem;
 }
-.is-width-4{
-  width:4rem;
+.is-width-4 {
+  width: 4rem;
 }
-.is-width-5{
-  width:5rem;
+.is-width-5 {
+  width: 5rem;
 }
 .w2 {
   width: 20%;
