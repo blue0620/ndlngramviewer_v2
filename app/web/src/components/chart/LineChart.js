@@ -17,7 +17,7 @@ export default {
          if(activePoints.length>0){
            const label=this.chart.data.datasets[activePoints[0]._datasetIndex].label;
            const year=this.chart.data.datasets[activePoints[0]._datasetIndex].data[activePoints[0]._index].x.getFullYear();
-           const url=this.chart.data.baseurl+label+this.chart.data.query1url+year+"-00-00"+this.chart.data.query2url+year+"-00-00";
+           const url=this.chart.data.baseurl+label+this.chart.data.query1url+year+this.chart.data.querysuffix+this.chart.data.query2url+year+this.chart.data.querysuffix;
            window.open(url);
          }
       },
