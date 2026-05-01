@@ -1,48 +1,29 @@
-import Vue from "vue";
-import Component from "vue-class-component";
-import { Prop } from "vue-property-decorator";
+import { defineComponent, ref, watch } from "vue";
+import template from "./search-pagesize.html?raw";
 
-
-@Component({
+export default defineComponent({
   name: "SearchPagesize",
-  template: require("./search-pagesize.html")
-})
-export default class SearchPagesize extends Vue {
-  @Prop({ default: false })
-  manual: boolean;
-
-  @Prop()
-  proppagesize: number;
-  
-  @Prop()
-  keyword:string;
-  
-  pagesize:number;
-
-  innnerSize:number = 0;
-  values = ["100", "200", "500"];
-
-  sizeChange(event) {
-    this.pagesize=event.target.value;
-    var pushobj:any={query: { keyword: this.keyword,size:this.pagesize}};
-    this.$router.push(pushobj).catch(()=>{});
-    this.$router.go(0);
-    console.log(this.pagesize);
-  }
-
-  get size() {
-    return this.pagesize;
-  }
-
-  go() {
-    this.pagesize=this.innnerSize;
-  }
-  mounted(){
-    this.pagesize=this.proppagesize;
-  }
-  set size(s) {
-    this.innnerSize = s;
-  }
-
-}
-
+  props: {
+    manual: { type: Boolean, default: false },
+    proppagesize: { type: Number, required: true },
+    keyword: { type: String, required: true },
+    materialtype: { type: String, required: true },
+    groupstr: { type: String, default: null },
+  },
+  setup(props) {
+    const pagesize = ref(props.proppagesize);
+    const values = ["100", "200", "500"];
+    watch(() => props.proppagesize, (v) => { pagesize.value = v; });
+    return { pagesize, values };
+  },
+  methods: {
+    sizeChange(event: Event) {
+      const target = event.target as HTMLSelectElement;
+      this.pagesize = parseInt(target.value, 10);
+      const pushobj: any = { query: { keyword: this.keyword, size: this.pagesize, from: 0, materialtype: this.materialtype } };
+      if (this.groupstr != null) pushobj.query.groupstr = this.groupstr;
+      this.$router.push(pushobj).catch(() => {});
+    },
+  },
+  template,
+});

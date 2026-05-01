@@ -1,5 +1,45 @@
+<template>
+  <div class="search-result-editor">
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">編集画面</p>
+        <button type="button" class="delete" @click="handleCancel" />
+      </header>
+      <section class="modal-card-body">
+        <line-chart :chart-data="datacollection"></line-chart>
+        <div v-if="totalingkeywordlist.length > 0">
+          <table class="table is-fullwidth">
+            <thead><tr><th>合算キーワード</th><th>合算後の総頻度</th><th>キャンセル</th></tr></thead>
+            <tbody>
+              <tr v-for="row in totalingkeywordlist" :key="row.ngramkeyword">
+                <td>{{ row.ngramkeyword }}</td><td>{{ row.count }}</td>
+                <td><button class="button is-small is-danger" @click.prevent="totalingDeleteRow(row)">削除</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="button is-success" @click="totalingResult">合算結果を含めたリンクを取得する</button>
+          <button class="button is-info" @click="totalingDownload">合算結果を含めたTSVを取得する</button>
+        </div>
+        <table class="table is-fullwidth">
+          <thead><tr><th></th><th>キーワード</th><th>総頻度</th></tr></thead>
+          <tbody>
+            <tr v-for="row in resultkeywordlist" :key="row.ngramkeyword">
+              <td><input type="checkbox" :checked="checkedRows.includes(row)" @change="$event.target.checked ? checkedRows.push(row) : checkedRows = checkedRows.filter(r => r !== row)"></td>
+              <td>{{ row.ngramkeyword }}</td><td>{{ row.count }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button" @click="handleCancel">編集画面を閉じる</button>
+        <button class="button is-primary" @click="totaling">選択したキーワードを合算する</button>
+      </footer>
+    </div>
+  </div>
+</template>
+
+<script lang="ts">
 import { defineComponent, nextTick } from "vue";
-import template from "./search-result-editor.html?raw";
 import LineChart from "../chart/LineChart.js";
 import yearfrequencyjson from "../../yearfrequency.json";
 import { downloadurl } from "../../service/search-service";
@@ -118,5 +158,5 @@ export default defineComponent({
     custom_compare(a: any, b: any) { return a.x - b.x; },
     custom_compare_count(a: any, b: any) { return a.count - b.count; },
   },
-  template,
 });
+</script>

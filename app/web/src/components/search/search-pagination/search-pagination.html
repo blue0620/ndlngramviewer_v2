@@ -5,14 +5,14 @@
       v-on:click="goto(page-1)"
       :disabled="page<=1"
     >
-      <b-icon icon="chevron-left"> </b-icon>
+      ‹
     </a>
     <a
       class="pagination-next is-small"
       v-on:click="goto(page+1)"
       :disabled="page>=maxPage"
     >
-      <b-icon icon="chevron-right"> </b-icon>
+      ›
     </a>
     <ul class="pagination-list">
       <template v-if="show1">

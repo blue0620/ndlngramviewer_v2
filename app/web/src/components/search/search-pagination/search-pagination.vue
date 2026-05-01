@@ -1,7 +1,43 @@
-import { defineComponent, computed, ref, watch } from "vue";
-import template from "./search-pagination.html?raw";
+<template>
+  <div class="search-paginaition">
+    <nav class="pagination is-small" role="navigation" aria-label="pagination">
+      <a class="pagination-previous is-small" v-on:click="goto(page - 1)">
+        <span class="icon">
+          <i class="fas fa-chevron-left"></i>
+        </span>
+      </a>
+      <a class="pagination-next is-small" v-on:click="goto(page + 1)">
+        <span class="icon">
+          <i class="fas fa-chevron-right"></i>
+        </span>
+      </a>
+      <ul class="pagination-list">
+        <template v-if="show1">
+          <li>
+            <a class="pagination-link" v-on:click="goto(1)" aria-label="Goto page 1">{{ 1 }}</a>
+          </li>
+          <li v-show="pageArray[0] > 2">
+            <span class="pagination-ellipsis">&hellip;</span>
+          </li>
+        </template>
+        <li v-for="p in pageArray" :key="p">
+          <a class="pagination-link" :class="{ 'is-current': p === page }" :aria-label="'Goto page ' + p" v-on:click="goto(p)">{{ p }}</a>
+        </li>
+        <template v-if="show2">
+          <li v-show="pageArray[pageArray.length - 1] < maxPage - 1">
+            <span class="pagination-ellipsis">&hellip;</span>
+          </li>
+          <li>
+            <a class="pagination-link" v-on:click="goto(maxPage)" :aria-label="'Goto page ' + maxPage">{{ maxPage }}</a>
+          </li>
+        </template>
+      </ul>
+    </nav>
+  </div>
+</template>
 
-import "./search-pagination.scss";
+<script lang="ts">
+import { defineComponent, computed, ref, watch } from "vue";
 
 export default defineComponent({
   name: "SearchPagination",
@@ -35,7 +71,7 @@ export default defineComponent({
   methods: {
     goto(page: number) {
       let nextPage = page;
-      if (nextPage < 0) nextPage = 0;
+      if (nextPage <= 0) nextPage = 1;
       if (nextPage > this.maxPage) nextPage = this.maxPage;
       this.pagefrom = this.pagesize * (nextPage - 1);
       const pushobj: any = { query: { keyword: this.keyword, size: this.pagesize, from: this.pagefrom, materialtype: this.materialtype } };
@@ -43,5 +79,7 @@ export default defineComponent({
       this.$router.push(pushobj).catch(() => {});
     },
   },
-  template,
 });
+</script>
+
+<style lang="scss" src="./search-pagination.scss"></style>

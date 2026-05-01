@@ -1,5 +1,5 @@
 @import "_palette.scss";
-@import "~bulma/sass/utilities/_all";
+@import "bulma/sass/utilities/_all";
 
 // Setup $colors to use as bulma classes
 $colors: (
@@ -41,8 +41,6 @@ $colors: (
   )
 );
 
-@import "~bulma";
-@import "~buefy/src/scss/buefy";
 
 @import "overrides";
 

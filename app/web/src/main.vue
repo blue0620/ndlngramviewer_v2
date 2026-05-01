@@ -219,7 +219,7 @@ main {
                 size="is-small" disabled/>
             </div>
             
-            <a :href="download()" target="_blank"><b-icon icon="download"></b-icon><span>検索結果の出現頻度をダウンロード（最大10,000件）</span></a>
+            <a :href="download()" target="_blank" rel="noopener noreferrer"><b-icon icon="download"></b-icon><span>検索結果の出現頻度をダウンロード（最大10,000件）</span></a>
             <a :href="downloadfrequency()"><b-icon icon="download"></b-icon><span>出版年代ごとの総対象ngram数の情報をダウンロード</span></a>
             <section>
               <ul class="inlineblock">
@@ -262,10 +262,10 @@ main {
             </b-modal>
             <nav class="search-nav level level-right">
               <div class="level-right">
-                <search-pagination :proppagefrom="pagefrom" :allhits="result.hit" :pagesize="pagesize" :keyword="input"></search-pagination>
+                <search-pagination :proppagefrom="pagefrom" :allhits="result.hit" :pagesize="pagesize" :keyword="input" :materialtype="radiomtype" :groupstr="groupstr"></search-pagination>
                 表示件数
                 <div class="search-pagesize-listbox">
-                  <search-pagesize :proppagesize="pagesize" :keyword="input"></search-pagesize>
+                  <search-pagesize :proppagesize="pagesize" :keyword="input" :materialtype="radiomtype" :groupstr="groupstr"></search-pagesize>
                 </div>
               </div>
             </nav>
@@ -308,182 +308,197 @@ main {
 </template>
 
 <script lang="ts">
-import Component from "vue-class-component";
-import Vue from "vue";
+import { computed, defineComponent, nextTick, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { Ngramyear } from "./domain/ngramyear";
-import { search,downloadurl,getyearfreq,SearchResult} from "./service/search-service";
-import { Watch } from "vue-property-decorator";
-import { DialogProgrammatic as Dialog } from 'buefy'
+import { search, downloadurl, getyearfreq, SearchResult } from "./service/search-service";
+import { DialogProgrammatic as Dialog } from "buefy";
 import SearchPagesize from "components/search/search-pagesize/search-pagesize";
 import SearchPagination from "components/search/search-pagination/search-pagination";
 import SearchResultEditor from "components/search-result-editor/search-result-editor";
+import LineChart from "./components/chart/LineChart.js";
 
-import LineChart from './components/chart/LineChart.js'
+const COLOR_CODES: string[] = ["#FF2800", "#66CCFF", "#35A16B", "#663300", "#9A0079", "#FF99A0", "#C7B2DE", "#B4EBFA", "#EDC58F", "#FFD1D1"];
 
-@Component({
-  components: {
-    LineChart,
-    SearchPagination,
-    SearchPagesize,
-    SearchResultEditor
-  }
-})
-export default class extends Vue {
-  input: string = "";
-  groupstr:string = null;
-  result: SearchResult<Ngramyear>= null;
-  loading: boolean = false;
-  deleteNot: boolean = true;
-  visibleValue:number=5;
-  datacollection:any= null;
-  dataload:boolean=false;
-  pagesize:number=100;
-  pagefrom:number=0;
-  isRate:boolean=false;
-　isComponentModalActive:boolean=false;
-  yearRange:number[]=[1860,2022];
-  radiomtype:string="full";
-  yearfrequencyjson:any = null;
-  ddbaseurl:string=null;
-  ddquery1url:string=null;
-  ddquery2url:string=null;
-  ddquerysuffix:string =null;
-  
-  @Watch("isRate")
-  @Watch("visibleValue")
-  @Watch("yearRange")
-  fillData () {
-    this.$nextTick(() => {
-      var datasetsarray:any=[];
-      let colorcode:string[]=["#FF2800","#66CCFF","#35A16B","#663300","#9A0079","#FF99A0","#C7B2DE","#B4EBFA","	#EDC58F","#FFD1D1"];
-      for(var ii=0;ii<Math.min(this.result.list.length,this.visibleValue);ii++){
-        let ngramkeyword=this.result.list[ii].ngramkeyword;
-        let jsonobj=JSON.parse(this.result.list[ii].ngramyearjson);
-        var dataarray:any=[];
-        let labelsarray=Object.keys(jsonobj);
-        let countarray=Object.values(jsonobj);
-        for(var j=0;j<labelsarray.length;j++){
-          if(Number(labelsarray[j])>=this.yearRange[0]&&Number(labelsarray[j])<=this.yearRange[1]){
-            if(this.isRate){
-              let yearsum=this.yearfrequencyjson[labelsarray[j]];
-              dataarray.push({x:new Date(Number(labelsarray[j]),1,1),y:Number(countarray[j])/Number(yearsum)});
-            }
-            else dataarray.push({x:new Date(Number(labelsarray[j]),1,1),y:countarray[j]});
-          }
-        }
-        dataarray.sort(this.custom_compare).reverse();
-        datasetsarray.push({label:ngramkeyword,
-                            data:dataarray,
-                            backgroundColor: colorcode[ii],
-                            borderColor: colorcode[ii],
-                            lineTension: 0.2,
-                            fill: false});
-      }
-      this.datacollection = {
-        datasets:datasetsarray,
-        baseurl:this.ddbaseurl,
-        query1url:this.ddquery1url,
-        query2url:this.ddquery2url,
-        querysuffix:this.ddquerysuffix
-      }
-    });
-  }
-  closeModal(){
-    this.isComponentModalActive=false;
-  }
-  custom_compare (a,b) {
-    // I'm assuming all values are numbers
-    return a.x - b.x;
-  }
-  downloadfrequency(){
-    return "https://lab.ndl.go.jp/dataset/ngramviewer/yearfrequency_"+this.radiomtype+".tsv";
-  }
-
-  get empty() {
-    return !this.input;
-  }
-  editModeFunc(){
-    this.isComponentModalActive = true;
-  }
-  @Watch("radiomtype")
-  async search() {
-    if(this.input){
-        this.loading = true;
-        this.dataload=false;
-        
-        if(this.groupstr!=null){
-          var pushobj:any={query: { keyword: this.input,size:this.pagesize,from:this.pagefrom,materialtype:this.radiomtype,groupstr:this.groupstr}};
-        }else{
-          var pushobj:any={query: { keyword: this.input,size:this.pagesize,from:this.pagefrom,materialtype:this.radiomtype}};
-        }
-        if(this.radiomtype==="tosho-pdm"){
-          this.ddbaseurl="https://lab.ndl.go.jp/dl/fulltext?keyword=";
-          this.ddquery1url="&searchfield=contentonly&r-publishyear=";
-          this.ddquery2url=",";
-          this.ddquerysuffix="";
-        }else{
-          this.ddquery1url="&publicationFrom=";
-          this.ddquery2url="&publicationTo=";
-          this.ddquerysuffix="-00-00";
-          if(this.radiomtype==null||this.radiomtype==="full"){
-            this.ddbaseurl="https://dl.ndl.go.jp/search/searchResult?accessRestrictions=internet&accessRestrictions=ooc&accessRestrictions=inlibrary&collection=A00001&collection=A00002&fullText=true&itemToSearch_facet=fullText&eraType=AD&keyword=";  
-          }else if(this.radiomtype==="tosho-all"){
-            this.ddbaseurl="https://dl.ndl.go.jp/search/searchResult?accessRestrictions=internet&accessRestrictions=ooc&accessRestrictions=inlibrary&collection=A00001&fullText=true&itemToSearch_facet=fullText&eraType=AD&keyword=";
-          }else if(this.radiomtype==="zasshi-all"){
-            this.ddbaseurl="https://dl.ndl.go.jp/search/searchResult?accessRestrictions=internet&accessRestrictions=ooc&accessRestrictions=inlibrary&collection=A00002&fullText=true&itemToSearch_facet=fullText&eraType=AD&keyword=";
-          }
-        }
-        this.$router.push(pushobj).catch(()=>{});
-        try {
-          this.result = (await search(encodeURIComponent(this.input),this.pagesize,this.pagefrom,this.radiomtype,this.groupstr)).data;
-          this.yearfrequencyjson = (await getyearfreq(this.radiomtype)).data;
-          this.fillData ();
-          this.dataload=true;
-        }catch{
-          Dialog.alert('エラーが発生しました。不正なクエリ文字列の可能性があります')
-          this.dataload=false;
-        }
-        this.loading = false;
-    }
-  }
-  download(){
-    return downloadurl(encodeURIComponent(this.input),this.radiomtype,this.groupstr);
-  }
-  searchbutton(){
-    if(this.input!=null){
-      this.pagefrom=0;
-      this.groupstr=null;
-      this.search();
-    }
-  }
-  beforeMount() {
-    var query = Object.assign({}, this.$route.query);
-    if (Array.isArray(query["keyword"])){
-      this.input=query["keyword"].join(" ");
-    }else{
-      this.input=query["keyword"];
-    }
-    if (Array.isArray(query["groupstr"])){
-      this.groupstr=query["groupstr"].join(" ");
-    }else{
-      this.groupstr=query["groupstr"];
-    }
-    if(query["size"]){
-      if(Array.isArray(query["size"]))this.pagesize=parseInt(query["size"][0]);
-      else this.pagesize=parseInt(query["size"]);
-    }
-    if(query["from"]){
-      if(Array.isArray(query["from"]))this.pagefrom=parseInt(query["from"][0]);
-      else this.pagefrom=parseInt(query["from"]);
-    }
-    if(query["materialtype"]){
-      if(Array.isArray(query["materialtype"]))this.radiomtype=query["materialtype"][0];
-      else this.radiomtype=query["materialtype"];
-    }
-    console.log(query);
-    if(this.input!=null)this.search();
-  }
-  mounted() {
-  }
+function toSingleQueryValue(value: unknown): string | null {
+  if (Array.isArray(value)) return value.length ? String(value[0]) : null;
+  if (value == null) return null;
+  return String(value);
 }
+
+function buildDatasets(
+  result: SearchResult<Ngramyear> | null,
+  yearRange: number[],
+  isRate: boolean,
+  yearfrequency: Record<string, number> | null,
+  visibleValue: number
+): any[] {
+  if (!result || !result.list) return [];
+  const maxCount = Math.min(result.list.length, visibleValue);
+
+  return Array.from({ length: maxCount }, (_, ii) => {
+    const row = result.list[ii];
+    const jsonobj = JSON.parse(row.ngramyearjson || "{}");
+    const labelsarray = Object.keys(jsonobj);
+    const countarray = Object.values(jsonobj);
+
+    const data = labelsarray
+      .map((label, j) => ({ label, count: Number(countarray[j]) }))
+      .filter(({ label }) => Number(label) >= yearRange[0] && Number(label) <= yearRange[1])
+      .map(({ label, count }) => {
+        if (isRate) {
+          const yearsum = Number(yearfrequency?.[label] ?? 0);
+          return { x: new Date(Number(label), 1, 1), y: yearsum > 0 ? count / yearsum : 0 };
+        }
+        return { x: new Date(Number(label), 1, 1), y: count };
+      })
+      .sort((a, b) => Number(a.x) - Number(b.x))
+      .reverse();
+
+    return {
+      label: row.ngramkeyword,
+      data,
+      backgroundColor: COLOR_CODES[ii],
+      borderColor: COLOR_CODES[ii],
+      lineTension: 0.2,
+      fill: false
+    };
+  });
+}
+
+export default defineComponent({
+  components: { LineChart, SearchPagination, SearchPagesize, SearchResultEditor },
+  setup(_, { root }) {
+    const input = ref("");
+    const groupstr = ref<string | null>(null);
+    const result = ref<SearchResult<Ngramyear> | null>(null);
+    const loading = ref(false);
+    const deleteNot = ref(true);
+    const visibleValue = ref(5);
+    const dataload = ref(false);
+    const pagesize = ref(100);
+    const pagefrom = ref(0);
+    const isRate = ref(false);
+    const isComponentModalActive = ref(false);
+    const yearRange = ref<number[]>([1860, 2022]);
+    const radiomtype = ref("full");
+    const yearfrequencyjson = ref<Record<string, number> | null>(null);
+    const ddbaseurl = ref<string | null>(null);
+    const ddquery1url = ref<string | null>(null);
+    const ddquery2url = ref<string | null>(null);
+    const ddquerysuffix = ref<string | null>(null);
+    const datacollection = reactive<any>({ datasets: [], baseurl: null, query1url: null, query2url: null, querysuffix: null });
+    const isRestored = ref(false);
+    const syncingFromCode = ref(false);
+
+    const empty = computed(() => !input.value);
+
+    const applyMaterialUrls = () => {
+      if (radiomtype.value === "tosho-pdm") {
+        ddbaseurl.value = "https://lab.ndl.go.jp/dl/fulltext?keyword=";
+        ddquery1url.value = "&searchfield=contentonly&r-publishyear=";
+        ddquery2url.value = ",";
+        ddquerysuffix.value = "";
+      } else {
+        ddquery1url.value = "&publicationFrom=";
+        ddquery2url.value = "&publicationTo=";
+        ddquerysuffix.value = "-00-00";
+        if (!radiomtype.value || radiomtype.value === "full") {
+          ddbaseurl.value = "https://dl.ndl.go.jp/search/searchResult?accessRestrictions=internet&accessRestrictions=ooc&accessRestrictions=inlibrary&collection=A00001&collection=A00002&fullText=true&itemToSearch_facet=fullText&eraType=AD&keyword=";
+        } else if (radiomtype.value === "tosho-all") {
+          ddbaseurl.value = "https://dl.ndl.go.jp/search/searchResult?accessRestrictions=internet&accessRestrictions=ooc&accessRestrictions=inlibrary&collection=A00001&fullText=true&itemToSearch_facet=fullText&eraType=AD&keyword=";
+        } else if (radiomtype.value === "zasshi-all") {
+          ddbaseurl.value = "https://dl.ndl.go.jp/search/searchResult?accessRestrictions=internet&accessRestrictions=ooc&accessRestrictions=inlibrary&collection=A00002&fullText=true&itemToSearch_facet=fullText&eraType=AD&keyword=";
+        }
+      }
+    };
+
+    const doSearch = async () => {
+      if (!input.value) return;
+      loading.value = true;
+      dataload.value = false;
+      applyMaterialUrls();
+
+      const query: any = { keyword: input.value, size: pagesize.value, from: pagefrom.value, materialtype: radiomtype.value };
+      if (groupstr.value != null) query.groupstr = groupstr.value;
+      syncingFromCode.value = true;
+      root.$router.push({ query }).catch(() => {}).finally(() => { syncingFromCode.value = false; });
+
+      try {
+        result.value = (await search(encodeURIComponent(input.value), pagesize.value, pagefrom.value, radiomtype.value, groupstr.value)).data;
+        yearfrequencyjson.value = (await getyearfreq(radiomtype.value)).data;
+        dataload.value = true;
+      } catch {
+        Dialog.alert("エラーが発生しました。不正なクエリ文字列の可能性があります");
+        dataload.value = false;
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    watch(radiomtype, async (now, prev) => {
+      if (!input.value || !isRestored.value) return;
+      if (now !== prev) await doSearch();
+    });
+
+    watch([isRate, visibleValue, yearRange, result, yearfrequencyjson], async () => {
+      if (!result.value) return;
+      await nextTick();
+      datacollection.datasets = buildDatasets(result.value, yearRange.value, isRate.value, yearfrequencyjson.value, visibleValue.value);
+      datacollection.baseurl = ddbaseurl.value;
+      datacollection.query1url = ddquery1url.value;
+      datacollection.query2url = ddquery2url.value;
+      datacollection.querysuffix = ddquerysuffix.value;
+    }, { deep: true });
+
+    const searchbutton = () => {
+      if (input.value != null) {
+        pagefrom.value = 0;
+        groupstr.value = null;
+        void doSearch();
+      }
+    };
+
+    onMounted(() => {
+      const query = { ...root.$route.query };
+      input.value = toSingleQueryValue(query["keyword"]) ?? "";
+      groupstr.value = toSingleQueryValue(query["groupstr"]);
+      const qSize = toSingleQueryValue(query["size"]);
+      const qFrom = toSingleQueryValue(query["from"]);
+      const qMtype = toSingleQueryValue(query["materialtype"]);
+      if (qSize) pagesize.value = parseInt(qSize, 10);
+      if (qFrom) pagefrom.value = parseInt(qFrom, 10);
+      if (qMtype) radiomtype.value = qMtype;
+      isRestored.value = true;
+    });
+
+    watch(() => root.$route.query, async (query) => {
+      if (syncingFromCode.value) return;
+      input.value = toSingleQueryValue(query["keyword"]) ?? "";
+      groupstr.value = toSingleQueryValue(query["groupstr"]);
+      const qSize = toSingleQueryValue(query["size"]);
+      const qFrom = toSingleQueryValue(query["from"]);
+      const qMtype = toSingleQueryValue(query["materialtype"]);
+      if (qSize) pagesize.value = parseInt(qSize, 10);
+      if (qFrom) pagefrom.value = parseInt(qFrom, 10);
+      if (qMtype) radiomtype.value = qMtype;
+      if (input.value) await doSearch();
+    }, { deep: true });
+
+    watchEffect(() => {
+      if (!isRestored.value) return;
+      if (input.value) void doSearch();
+    });
+
+    return {
+      input, groupstr, result, loading, deleteNot, visibleValue, datacollection, dataload, pagesize, pagefrom,
+      isRate, isComponentModalActive, yearRange, radiomtype, ddbaseurl, ddquery1url, ddquery2url, ddquerysuffix,
+      empty,
+      closeModal: () => { isComponentModalActive.value = false; },
+      downloadfrequency: () => `https://lab.ndl.go.jp/dataset/ngramviewer/yearfrequency_${radiomtype.value}.tsv`,
+      editModeFunc: () => { isComponentModalActive.value = true; },
+      download: () => downloadurl(encodeURIComponent(input.value), radiomtype.value, groupstr.value),
+      searchbutton
+    };
+  }
+});
 </script>
