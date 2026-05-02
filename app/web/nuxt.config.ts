@@ -1,6 +1,7 @@
 type DeployEnv = "prod" | "stg";
 
-const deployEnv = (process.env.NUXT_DEPLOY_ENV || "prod") as DeployEnv;
+const deployEnv = process.env.NUXT_DEPLOY_ENV as DeployEnv | undefined;
+const isStaticBuild = process.env.NUXT_STATIC_BUILD === "true";
 
 const appBaseByEnv: Record<DeployEnv, string> = {
   prod: "/ngramviewer/",
@@ -12,18 +13,19 @@ const assetsDirByEnv: Record<DeployEnv, string> = {
   stg: "/assets/js/",
 };
 
-const selectedBaseURL = process.env.NUXT_APP_BASE_URL || appBaseByEnv[deployEnv] || appBaseByEnv.prod;
-const selectedAssetsDir = process.env.NUXT_APP_BUILD_ASSETS_DIR || assetsDirByEnv[deployEnv] || assetsDirByEnv.prod;
+const defaultBaseURL = process.env.NUXT_APP_BASE_URL || "/ngramviewer/";
+const defaultAssetsDir = process.env.NUXT_APP_BUILD_ASSETS_DIR || "/assets/";
+
+const selectedBaseURL = isStaticBuild && deployEnv ? appBaseByEnv[deployEnv] : defaultBaseURL;
+const selectedAssetsDir = isStaticBuild && deployEnv ? assetsDirByEnv[deployEnv] : defaultAssetsDir;
 
 export default defineNuxtConfig({
-  ssr: false,
+  ...(isStaticBuild ? { ssr: false } : {}),
   app: {
     baseURL: selectedBaseURL,
     buildAssetsDir: selectedAssetsDir,
     head: {
-      link: [
-        { rel: "icon", type: "image/x-icon", href: "favicon.ico" },
-      ],
+      link: [{ rel: "icon", type: "image/x-icon", href: "favicon.ico" }],
     },
   },
   css: ["~/assets/styles/main.scss", "bulma/css/bulma.min.css", "@fortawesome/fontawesome-free/css/all.min.css"],

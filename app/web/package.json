@@ -6,8 +6,8 @@
     "build": "nuxt build",
     "start": "nuxt start",
     "generate": "nuxt generate",
-    "build:prod": "NUXT_DEPLOY_ENV=prod nuxt generate",
-    "build:stg": "NUXT_DEPLOY_ENV=stg nuxt generate"
+    "build:prod": "NUXT_STATIC_BUILD=true NUXT_DEPLOY_ENV=prod nuxt generate",
+    "build:stg": "NUXT_STATIC_BUILD=true NUXT_DEPLOY_ENV=stg nuxt generate"
   },
   "author": "ndl",
   "dependencies": {
